@@ -8,12 +8,12 @@ const updateStatusSchema = z.object({
 })
 
 interface RouteContext {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }
 
 export async function PATCH(req: NextRequest, { params }: RouteContext) {
   try {
-    const { id } = params
+    const { id } = await params
     if (!id) {
       return NextResponse.json({ error: 'Missing order id' }, { status: 400 })
     }

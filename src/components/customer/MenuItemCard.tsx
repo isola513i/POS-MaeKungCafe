@@ -1,7 +1,11 @@
+"use client"
+
+import { useState } from 'react'
 import { MenuItem } from '../../../types'
 import { Card, CardContent } from '../ui/card'
 import { Button } from '../ui/button'
 import Image from 'next/image'
+import { ImageOff } from 'lucide-react'
 
 interface MenuItemCardProps {
   item: MenuItem
@@ -9,20 +13,25 @@ interface MenuItemCardProps {
 }
 
 export function MenuItemCard({ item, onAdd }: MenuItemCardProps) {
+  const [imgError, setImgError] = useState(false)
+  const showImage = !!item.imageUrl && !imgError
+
   return (
     <Card className="overflow-hidden rounded-2xl shadow-sm bg-white border-gray-100 hover:shadow-md transition-shadow duration-200">
-      <div className="relative aspect-square">
-        {item.imageUrl ? (
+      <div className="relative aspect-square bg-gradient-to-br from-gray-50 to-gray-100">
+        {showImage ? (
           <Image
-            src={item.imageUrl}
+            src={item.imageUrl!}
             alt={item.name}
             fill
             className="object-cover"
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            onError={() => setImgError(true)}
           />
         ) : (
-          <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-            <span className="text-gray-400 text-sm">No image</span>
+          <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-gray-400">
+            <ImageOff className="w-8 h-8" />
+            <span className="text-xs">No image</span>
           </div>
         )}
       </div>

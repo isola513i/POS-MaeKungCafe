@@ -39,6 +39,7 @@ export async function POST(req: NextRequest) {
     const menuItemIds = Array.from(new Set(items.map((i) => i.menuItemId)))
     const menuItems = await prisma.menuItem.findMany({
       where: { id: { in: menuItemIds }, isAvailable: true },
+      select: { id: true, price: true },
     })
 
     if (menuItems.length !== menuItemIds.length) {
