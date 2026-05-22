@@ -1,13 +1,15 @@
 "use client"
 
-import { useState } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { OrderStatus } from '@prisma/client'
-import { mockOrders } from '@/lib/mock-data'
 import { OrderWithItems } from '../../../../types'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { Loader2 } from 'lucide-react'
+
+const POLL_INTERVAL_MS = 5000
 
 const COLUMNS: {
   status: OrderStatus
@@ -160,25 +162,72 @@ function OrderCard({ order, borderColor, onAdvance, onArchive }: OrderCardProps)
 }
 
 export default function KitchenDashboardPage() {
-  const [orders, setOrders] = useState<OrderWithItems[]>(mockOrders)
+  const [orders, setOrders] = useState<OrderWithItems[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  // Track in-flight PATCH ids so we can disable buttons and avoid double-clicks.
+  const updatingRef = useRef<Set<string>>(new Set())
+  const [, forceRender] = useState(0)
+
+  const fetchOrders = useCallback(async (silent = false) => {
+    if (!silent) setIsLoading(true)
+    try {
+      const res = await fetch('/api/orders', { cache: 'no-store' })
+      if (!res.ok) throw new Error(`Request failed with status ${res.status}`)
+      const json = await res.json()
+      setOrders(json.data ?? [])
+      setError(null)
+    } catch (err) {
+      console.error('Failed to fetch orders:', err)
+      setError('Could not load orders. Retrying...')
+    } finally {
+      if (!silent) setIsLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchOrders()
+    // Auto-refresh every 5s so the kitchen sees new orders without reloading.
+    const intervalId = setInterval(() => fetchOrders(true), POLL_INTERVAL_MS)
+    return () => clearInterval(intervalId)
+  }, [fetchOrders])
+
+  const updateStatus = useCallback(
+    async (orderId: string, status: OrderStatus) => {
+      if (updatingRef.current.has(orderId)) return
+      updatingRef.current.add(orderId)
+      forceRender((n) => n + 1)
+      try {
+        const res = await fetch(`/api/orders/${orderId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status }),
+        })
+        if (!res.ok) throw new Error(`Request failed with status ${res.status}`)
+        await fetchOrders(true)
+      } catch (err) {
+        console.error('Failed to update order status:', err)
+        alert('Could not update order status. Please try again.')
+      } finally {
+        updatingRef.current.delete(orderId)
+        forceRender((n) => n + 1)
+      }
+    },
+    [fetchOrders]
+  )
 
   const advanceOrder = (orderId: string) => {
-    setOrders((prev) =>
-      prev.map((order) => {
-        if (order.id !== orderId) return order
-        if (order.status === OrderStatus.PENDING) {
-          return { ...order, status: OrderStatus.COOKING, updatedAt: new Date() }
-        }
-        if (order.status === OrderStatus.COOKING) {
-          return { ...order, status: OrderStatus.READY, updatedAt: new Date() }
-        }
-        return order
-      })
-    )
+    const order = orders.find((o) => o.id === orderId)
+    if (!order) return
+    if (order.status === OrderStatus.PENDING) {
+      updateStatus(orderId, OrderStatus.COOKING)
+    } else if (order.status === OrderStatus.COOKING) {
+      updateStatus(orderId, OrderStatus.COMPLETED)
+    }
   }
 
   const archiveOrder = (orderId: string) => {
-    setOrders((prev) => prev.filter((o) => o.id !== orderId))
+    updateStatus(orderId, OrderStatus.CANCELLED)
   }
 
   // Treat READY as part of "Completed" column for the simple 3-column MVP view.
@@ -193,7 +242,27 @@ export default function KitchenDashboardPage() {
 
   return (
     <div className="p-6">
-      <div className="grid grid-cols-3 gap-6 h-[calc(100vh-100px)]">
+      {/* Status bar: live polling + error */}
+      <div className="flex items-center justify-between mb-4 text-sm text-zinc-400">
+        <div className="flex items-center gap-2">
+          {isLoading ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin text-zinc-400" />
+              <span>Loading orders...</span>
+            </>
+          ) : (
+            <>
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span>Live · auto-refresh every 5s</span>
+            </>
+          )}
+        </div>
+        {error && (
+          <span className="text-amber-400 text-xs">{error}</span>
+        )}
+      </div>
+
+      <div className="grid grid-cols-3 gap-6 h-[calc(100vh-140px)]">
         {COLUMNS.map((col) => {
           const columnOrders = getOrdersByStatus(col.status)
           return (

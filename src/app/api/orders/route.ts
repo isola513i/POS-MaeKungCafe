@@ -20,6 +20,25 @@ const createOrderSchema = z.object({
   items: z.array(createOrderItemSchema).min(1).max(50),
 })
 
+export async function GET() {
+  try {
+    const orders = await prisma.order.findMany({
+      include: {
+        orderItems: { include: { menuItem: true } },
+      },
+      orderBy: { createdAt: 'asc' },
+    })
+
+    return NextResponse.json({ data: orders }, { status: 200 })
+  } catch (error) {
+    console.error('[GET /api/orders] Failed to fetch orders:', error)
+    return NextResponse.json(
+      { error: 'Failed to fetch orders' },
+      { status: 500 }
+    )
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
     const json = await req.json()
