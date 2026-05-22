@@ -1,7 +1,8 @@
 "use client"
 
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { ChevronLeft, Trash2, Plus, Minus, ShoppingBag } from 'lucide-react'
+import { ChevronLeft, Trash2, Plus, Minus, ShoppingBag, Loader2 } from 'lucide-react'
 import { useCart } from '@/hooks/useCart'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -10,11 +11,45 @@ import { Separator } from '@/components/ui/separator'
 export default function CartPage() {
   const router = useRouter()
   const { items, updateQuantity, removeItem, getTotalPrice, clearCart } = useCart()
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const handleSubmitOrder = () => {
-    alert('Order submitted to the kitchen!')
-    clearCart()
-    router.push('/menu')
+  const handleSubmitOrder = async () => {
+    if (isSubmitting || items.length === 0) return
+    setIsSubmitting(true)
+    try {
+      // API expects tableNumber as a string and a normalized item shape.
+      // Hardcoded to "1" until QR-based table detection is implemented.
+      const payload = {
+        tableNumber: '1',
+        totalPrice: getTotalPrice(),
+        items: items.map((item) => ({
+          menuItemId: item.id,
+          quantity: item.quantity,
+          size: item.size,
+          sweetnessLevel: item.sweetnessLevel,
+          specialNote: item.specialNote,
+        })),
+      }
+
+      const res = await fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+
+      if (!res.ok) {
+        throw new Error(`Request failed with status ${res.status}`)
+      }
+
+      clearCart()
+      alert('Order sent to the kitchen!')
+      router.push('/menu')
+    } catch (err) {
+      console.error('Failed to submit order:', err)
+      alert('Could not send your order. Please try again.')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   // Empty State
@@ -156,9 +191,17 @@ export default function CartPage() {
             </div>
             <Button
               onClick={handleSubmitOrder}
-              className="w-full rounded-full bg-blue-600 hover:bg-blue-700 text-white py-6 text-base font-semibold shadow-sm hover:shadow-md transition-all duration-200"
+              disabled={isSubmitting}
+              className="w-full rounded-full bg-blue-600 hover:bg-blue-700 text-white py-6 text-base font-semibold shadow-sm hover:shadow-md transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed"
             >
-              Submit Order
+              {isSubmitting ? (
+                <span className="inline-flex items-center gap-2">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Sending...
+                </span>
+              ) : (
+                'Submit Order'
+              )}
             </Button>
           </div>
         </div>
