@@ -44,3 +44,7 @@ coverage/
 # Misc
 .vercel
 *.tsbuildinfo
+
+# AI Agent Skills (documentation for AI tools only)
+.agents/
+skills-lock.json
