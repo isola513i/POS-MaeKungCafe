@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
 import { ChevronLeft, Trash2, Plus, Minus, ShoppingBag, Loader2 } from 'lucide-react'
 import { useCart } from '@/hooks/useCart'
 import { Button } from '@/components/ui/button'
@@ -42,11 +43,15 @@ export default function CartPage() {
       }
 
       clearCart()
-      alert('Order sent to the kitchen!')
+      toast.success('Order sent to the kitchen!', {
+        description: 'Sit back and relax — we\'ll prepare it shortly.',
+      })
       router.push('/menu')
     } catch (err) {
       console.error('Failed to submit order:', err)
-      alert('Could not send your order. Please try again.')
+      toast.error('Could not send your order', {
+        description: 'Please check your connection and try again.',
+      })
     } finally {
       setIsSubmitting(false)
     }

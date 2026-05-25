@@ -93,4 +93,9 @@ src/
 * [X] Phase 3: Build Base UI Components (Customer & Kitchen).
   * [X] Customer LIFF UI base complete (MenuItemCard, CategoryFilter, FloatingCartBar, MenuItemModifierDialog, useCart store, /menu and /cart pages).
   * [X] Kitchen Dashboard UI complete (layout with live clock, 3-column Kanban dashboard, status transitions).
-* [ ] Phase 4: Integration (Supabase Real-time & LIFF).
+* [X] Phase 4: Integration (Supabase Real-time & LIFF).
+  * [X] Phase 4.1: DB live on Supabase, seeded. Menu page fetches from GET /api/menu with loading skeleton + error/retry state.
+  * [X] Phase 4.2: Cart page POSTs to POST /api/orders with isSubmitting state, Zod validation, server-side price calculation.
+  * [X] Phase 4.3: Kitchen dashboard fetches from GET /api/orders, PATCHes /api/orders/[id] for status transitions, polls every 5s with live status bar.
+  * [ ] Phase 4.4: Replace polling with Supabase Realtime subscriptions.
+  * [ ] Phase 4.5: LINE LIFF integration (customerId binding, LINE access token verification).

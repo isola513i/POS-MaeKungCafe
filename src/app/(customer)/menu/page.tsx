@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
+import { Coffee } from 'lucide-react'
 import { Category } from '@prisma/client'
 import { MenuItemCard } from '@/components/customer/MenuItemCard'
 import { CategoryFilter } from '@/components/customer/CategoryFilter'
@@ -66,6 +68,10 @@ export default function MenuPage() {
   const handleConfirmAdd = (size: string, sweetness: string, note?: string) => {
     if (!activeItem) return
     addItem(activeItem, size, sweetness, note)
+    toast.success(`Added ${activeItem.name}`, {
+      description: `${size} · Sweetness ${sweetness}%`,
+      duration: 2000,
+    })
   }
 
   const handleViewCart = () => {
@@ -131,9 +137,15 @@ export default function MenuPage() {
             </Button>
           </div>
         ) : filteredItems.length === 0 ? (
-          <div className="flex items-center justify-center py-20">
-            <p className="text-gray-500 text-sm">
-              No items available in this category.
+          <div className="flex flex-col items-center justify-center py-20 text-center">
+            <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+              <Coffee className="w-8 h-8 text-gray-400" />
+            </div>
+            <h2 className="text-base font-semibold text-gray-900 mb-1">
+              Nothing here yet
+            </h2>
+            <p className="text-sm text-gray-500 max-w-xs">
+              Try another category to discover something tasty.
             </p>
           </div>
         ) : (

@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { toast } from 'sonner'
 import { OrderStatus } from '@prisma/client'
 import { OrderWithItems } from '../../../../types'
 import { Card } from '@/components/ui/card'
@@ -207,7 +208,9 @@ export default function KitchenDashboardPage() {
         await fetchOrders(true)
       } catch (err) {
         console.error('Failed to update order status:', err)
-        alert('Could not update order status. Please try again.')
+        toast.error('Could not update order status', {
+          description: 'Please try again.',
+        })
       } finally {
         updatingRef.current.delete(orderId)
         forceRender((n) => n + 1)
